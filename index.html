@@ -236,7 +236,9 @@
     .build-btn:disabled,
     .formula-btn:disabled,
     .speak-btn:disabled,
-    .answer-btn:disabled {
+    .answer-btn:disabled,
+    .workspace-reset:disabled,
+    .input-icon-btn:disabled {
       opacity: .42;
       cursor: not-allowed;
       transform: none;
@@ -1362,6 +1364,13 @@
     .block.block-settle { animation: blockSettle .36s cubic-bezier(.2,.9,.2,1.3); }
     .block.block-enter { animation: blockEnter .42s cubic-bezier(.2,.85,.2,1.25) both; animation-delay: var(--block-delay, 0ms); }
     .block.block-exit { animation: blockExit .3s ease both; animation-delay: var(--block-delay, 0ms); }
+    .block.block-bundle-out {
+      animation: blockBundleOut .64s cubic-bezier(.55,.05,.7,.25) both;
+      animation-delay: var(--block-delay, 0ms);
+      pointer-events: none;
+    }
+    .workspace.is-exchanging .block { pointer-events: none; }
+    .workspace.is-exchanging .category-box { box-shadow: inset 0 0 0 2px rgba(255,202,79,.2); }
 
     .exchange-coach {
       position: absolute;
@@ -1384,6 +1393,7 @@
     }
 
     .exchange-coach.hidden { display: none; }
+    .workspace:not(.show-addition-area) .exchange-coach { top: auto; bottom: 14px; }
     .workspace.show-addition-area:has(.exchange-coach:not(.hidden)) .addition-layer { top: 80px; }
     .coach-badge {
       padding: 5px 9px;
@@ -1414,6 +1424,11 @@
     }
     @keyframes blockExit {
       to { opacity: 0; transform: translateY(16px) scale(.7); }
+    }
+    @keyframes blockBundleOut {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      68% { opacity: 1; transform: translate(var(--bundle-x), var(--bundle-y)) scale(.62); }
+      100% { opacity: 0; transform: translate(var(--bundle-x), var(--bundle-y)) scale(.12) rotate(12deg); }
     }
     @keyframes coachIn {
       from { opacity: 0; transform: translate(-50%, -10px) scale(.96); }
@@ -1755,6 +1770,7 @@
     let currentActivePlace = "";
     let coachTimer = null;
     let malayAudioPreloaded = false;
+    let freeExchangeRunning = false;
 
     const languageData = {
       en: { words: numberToEnglish, speechLang: "en-US" },
@@ -1789,7 +1805,10 @@
         tooMany: (group, count, place) => `${group}: remove ${count} extra ${place} block${count === 1 ? "" : "s"}.`,
         wrongPlace: "Match each block to the place with the same value.",
         correct: "Great work! Every block is in the correct place.",
-        tapHint: "Drag a block here, or tap a block to add it."
+        tapHint: "Match each block to its place, or tap a block to add it.",
+        freeWrongPlace: place => `This block belongs in the ${place} place.`,
+        freeExchange: (count, from, result, to) => `${count} ${from} blocks have the same value as ${result} ${to} block${result === 1 ? "" : "s"}. Watch the exchange!`,
+        freeExchangeDone: "The blocks changed, but the total value stayed the same."
       },
       zh: {
         soundOn: "🔊 声音开", soundOff: "🔇 声音关", difficulty: "难度",
@@ -1805,7 +1824,10 @@
         tooMany: (group, count, place) => `${group}的${place}多了 ${count} 个方块。`,
         wrongPlace: "请把方块放进相同位值的格子。",
         correct: "做得好！所有方块都放对了。",
-        tapHint: "把方块拖进来，或点一下方块加入。"
+        tapHint: "把方块放进相同位值的格子，或点一下自动加入。",
+        freeWrongPlace: place => `这个方块应该放在${place}。`,
+        freeExchange: (count, from, result, to) => `${count} 个${from}和 ${result} 个${to}的值一样。看看它们怎样交换！`,
+        freeExchangeDone: "方块的样子改变了，但是总数没有改变。"
       },
       bm: {
         soundOn: "🔊 Bunyi Hidup", soundOff: "🔇 Bunyi Tutup", difficulty: "Tahap",
@@ -1821,7 +1843,10 @@
         tooMany: (group, count, place) => `${group}: keluarkan ${count} blok ${place} yang berlebihan.`,
         wrongPlace: "Padankan setiap blok dengan nilai tempat yang sama.",
         correct: "Syabas! Semua blok berada di tempat yang betul.",
-        tapHint: "Seret blok ke sini atau ketik blok untuk menambahnya."
+        tapHint: "Padankan blok dengan nilai tempatnya atau ketik untuk menambah.",
+        freeWrongPlace: place => `Blok ini perlu diletakkan di tempat ${place}.`,
+        freeExchange: (count, from, result, to) => `${count} blok ${from} sama nilainya dengan ${result} blok ${to}. Lihat pertukarannya!`,
+        freeExchangeDone: "Bentuk blok berubah, tetapi jumlah nilainya tetap sama."
       }
     };
 
@@ -2198,12 +2223,43 @@
       currentActivePlace = place;
     }
 
+    function findFreeCategoryAt(clientX, clientY) {
+      for (const box of categoryBoxes) {
+        const rect = box.getBoundingClientRect();
+        const inside = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+        if (inside) return { category: box.dataset.category, box };
+      }
+      return null;
+    }
+
+    function findValidFreeTargetAt(clientX, clientY, type) {
+      const target = findFreeCategoryAt(clientX, clientY);
+      return target && target.category === type ? target : null;
+    }
+
     function highlightDropTarget(clientX, clientY, type) {
-      document.querySelectorAll(".drop-target-active").forEach(element => element.classList.remove("drop-target-active"));
+      document.querySelectorAll(".drop-target-active, .practice-error").forEach(element => element.classList.remove("drop-target-active", "practice-error"));
+      if (currentMode === "free") {
+        const target = findFreeCategoryAt(clientX, clientY);
+        if (!target) return;
+        target.box.classList.add(target.category === type ? "drop-target-active" : "practice-error");
+        return;
+      }
       if (!isOperationMode()) return;
       const target = findValidAdditionTargetAt(clientX, clientY, type);
       if (!target) return;
       document.querySelector(`.add-box[data-group="${target.group}"][data-category="${target.category}"]`)?.classList.add("drop-target-active");
+    }
+
+    function rejectFreeDrop(type, actualCategory = "") {
+      const text = experienceTextData[currentLang] || experienceTextData.en;
+      const place = getPlaceLabelByType(type);
+      showInputMessage(text.freeWrongPlace(place));
+      playFeedbackSound(false);
+      const wrongBox = actualCategory ? document.querySelector(`.category-box[data-category="${actualCategory}"]`) : null;
+      wrongBox?.classList.add("practice-error");
+      pulsePlace(type);
+      setTimeout(() => wrongBox?.classList.remove("practice-error"), 700);
     }
 
     function showExchangeCoach(message, options = {}) {
@@ -3480,6 +3536,7 @@
 
     function startFromSource(e) {
       e.preventDefault();
+      if (freeExchangeRunning) return;
       const source = e.currentTarget;
       const type = source.dataset.type;
       const value = Number(source.dataset.value);
@@ -3527,7 +3584,7 @@
       source.removeEventListener("pointerup", onSourcePointerUp);
       source.removeEventListener("pointercancel", onSourcePointerUp);
       source.classList.remove("tap-active");
-      document.querySelectorAll(".drop-target-active").forEach(element => element.classList.remove("drop-target-active"));
+      document.querySelectorAll(".drop-target-active, .practice-error").forEach(element => element.classList.remove("drop-target-active", "practice-error"));
 
       const rect = workspace.getBoundingClientRect();
       const isInside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
@@ -3550,7 +3607,12 @@
           const target = findValidAdditionTargetAt(e.clientX, e.clientY, currentDrag.type);
           if (target) addPracticeBlock(currentDrag.type, currentDrag.value, target.group, target.category);
         } else {
-          addBlock(currentDrag.type, currentDrag.value, e.clientX - rect.left, e.clientY - rect.top);
+          const target = findFreeCategoryAt(e.clientX, e.clientY);
+          if (target?.category === currentDrag.type) {
+            addBlock(currentDrag.type, currentDrag.value, e.clientX - rect.left, e.clientY - rect.top);
+          } else {
+            rejectFreeDrop(currentDrag.type, target?.category || "");
+          }
         }
       } else if (!currentDrag.moved) {
         addSourceByTap(currentDrag.type, currentDrag.value);
@@ -3613,20 +3675,14 @@
       }
 
       const block = createBlockElement(type, value);
-      requestAnimationFrame(() => {
-        const maxX = workspace.clientWidth - block.offsetWidth;
-        const maxY = workspace.clientHeight - block.offsetHeight;
-        const wantedLeft = clamp(x - block.offsetWidth / 2, 0, maxX);
-        const wantedTop = clamp(y - block.offsetHeight / 2, 0, maxY);
-        const position = findFreePosition(block, wantedLeft, wantedTop);
-        block.style.left = position.left + "px";
-        block.style.top = position.top + "px";
-        settleBlock(block);
-      });
       total += value;
       hideAnswer();
       updateDisplay();
       updateWorkspaceLayout();
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        arrangeBlocksByCategory();
+        setTimeout(() => settleBlock(block), 70);
+      }));
     }
 
     function addPracticeBlock(type, value, group, placeCategory) {
@@ -3693,6 +3749,7 @@
 
     function startMoveExisting(e) {
       e.preventDefault();
+      if (freeExchangeRunning) return;
       if (e.currentTarget.dataset.group === "T") return;
       if (isOperationMode() && additionBuilt) switchOperationBuiltToFreeDrag();
       else if (isOperationMode() && additionFreeBuilt && hasOperationQuestionInputs()) {
@@ -3754,10 +3811,24 @@
       block.removeEventListener("pointerup", stopMoveExisting);
       block.removeEventListener("pointercancel", stopMoveExisting);
       block.classList.remove("dragging");
-      document.querySelectorAll(".drop-target-active").forEach(element => element.classList.remove("drop-target-active"));
+      document.querySelectorAll(".drop-target-active, .practice-error").forEach(element => element.classList.remove("drop-target-active", "practice-error"));
 
       if (currentDrag && !currentDrag.moved) {
         removePlacedBlock(block);
+        currentDrag = null;
+        return;
+      }
+
+      if (currentMode === "free") {
+        const target = findFreeCategoryAt(e.clientX, e.clientY);
+        if (target?.category === block.dataset.type) {
+          clearInputError();
+          pulsePlace(block.dataset.type);
+        } else {
+          rejectFreeDrop(block.dataset.type, target?.category || "");
+        }
+        updateWorkspaceLayout();
+        setTimeout(() => settleBlock(block), 80);
         currentDrag = null;
         return;
       }
@@ -3855,6 +3926,105 @@
       if (places.length) setTimeout(clearActivePlace, 450 + places.length * 260);
     }
 
+    function getNextFreeExchangeStage() {
+      const exchanges = [
+        { from: "one", to: "ten", toValue: 10 },
+        { from: "ten", to: "hundred", toValue: 100 },
+        { from: "hundred", to: "thousand", toValue: 1000 }
+      ];
+      for (const exchange of exchanges) {
+        const blocks = placedBlocks.filter(block => !block.dataset.group && block.dataset.type === exchange.from);
+        const resultCount = Math.floor(blocks.length / 10);
+        if (resultCount > 0) {
+          return { ...exchange, resultCount, sourceBlocks: blocks.slice(0, resultCount * 10) };
+        }
+      }
+      return null;
+    }
+
+    function setFreeExchangeBusy(busy) {
+      freeExchangeRunning = busy;
+      workspace.classList.toggle("is-exchanging", busy);
+      answerBtn.disabled = busy;
+      resetBtn.disabled = busy;
+      buildFreeBtn.disabled = busy;
+      clearFreeInputBtn.disabled = busy;
+      freeNumberInput.disabled = busy;
+      modeSelect.disabled = busy;
+      if (!busy) updateAdditionButtonStates();
+    }
+
+    async function animateFreeExchangeStage(stage, step) {
+      const text = experienceTextData[currentLang] || experienceTextData.en;
+      const labels = categoryTextData[currentLang] || categoryTextData.en;
+      const sourceBox = document.querySelector(`.category-box[data-category="${stage.from}"]`);
+      const workspaceRect = workspace.getBoundingClientRect();
+      const sourceRect = sourceBox.getBoundingClientRect();
+      const targetX = sourceRect.left - workspaceRect.left + sourceRect.width / 2;
+      const targetY = sourceRect.top - workspaceRect.top + sourceRect.height / 2;
+
+      clearActivePlace();
+      sourceBox.classList.add("active-place");
+      showExchangeCoach(
+        text.freeExchange(stage.sourceBlocks.length, labels[stage.from], stage.resultCount, labels[stage.to]),
+        { from: stage.from, to: stage.to, step, sticky: true }
+      );
+      playExchangeSound();
+
+      stage.sourceBlocks.forEach((block, index) => {
+        const left = parseFloat(block.style.left) || 0;
+        const top = parseFloat(block.style.top) || 0;
+        block.style.setProperty("--bundle-x", `${targetX - left - block.offsetWidth / 2}px`);
+        block.style.setProperty("--bundle-y", `${targetY - top - block.offsetHeight / 2}px`);
+        block.style.setProperty("--block-delay", `${Math.min(index * 12, 170)}ms`);
+        block.classList.add("block-bundle-out");
+      });
+
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      await wait(reducedMotion ? 80 : 860);
+
+      stage.sourceBlocks.forEach(block => {
+        const index = placedBlocks.indexOf(block);
+        if (index !== -1) placedBlocks.splice(index, 1);
+        block.remove();
+      });
+
+      const created = [];
+      for (let i = 0; i < stage.resultCount; i++) {
+        const block = createBlockElement(stage.to, stage.toValue);
+        block.style.visibility = "hidden";
+        created.push(block);
+      }
+      arrangeBlocksByCategory();
+      await wait(reducedMotion ? 30 : 110);
+      created.forEach(block => block.style.removeProperty("visibility"));
+      animateBlockSequence(created);
+      pulsePlace(stage.to);
+      await wait(reducedMotion ? 70 : 760);
+    }
+
+    async function normalizeFreeBlocksWithAnimation() {
+      if (currentMode !== "free" || freeExchangeRunning) return false;
+      let stage = getNextFreeExchangeStage();
+      if (!stage) return false;
+
+      setFreeExchangeBusy(true);
+      let step = 1;
+      try {
+        while (stage && step <= 6) {
+          await animateFreeExchangeStage(stage, step);
+          stage = getNextFreeExchangeStage();
+          step += 1;
+        }
+        return true;
+      } finally {
+        setFreeExchangeBusy(false);
+        clearActivePlace();
+        updateDisplay();
+        updateWorkspaceLayout();
+      }
+    }
+
     function hideAnswer() {
       answerVisible = false;
       document.body.classList.remove("answer-shown");
@@ -3878,14 +4048,17 @@
       if (usingAdditionArea) {
         if (additionFreeBuilt) syncAdditionNumbersFromBlocks();
         categoryLayer.classList.add("hidden");
+        categoryLayer.setAttribute("aria-hidden", "true");
         additionLayer.classList.remove("hidden");
         arrangeBlocksForAddition();
-      } else if (currentMode === "free" && answerVisible) {
+      } else if (currentMode === "free") {
         additionLayer.classList.add("hidden");
         categoryLayer.classList.remove("hidden");
+        categoryLayer.setAttribute("aria-hidden", "false");
         arrangeBlocksByCategory();
       } else {
         categoryLayer.classList.add("hidden");
+        categoryLayer.setAttribute("aria-hidden", "true");
         additionLayer.classList.add("hidden");
         arrangeBlocksInWorkspace();
       }
@@ -4071,7 +4244,7 @@
 
     function arrangeBlocksByCategory() {
       requestAnimationFrame(() => {
-        if (!(currentMode === "free" && answerVisible)) return;
+        if (currentMode !== "free") return;
         updateCategoryLabels();
         const workspaceRect = workspace.getBoundingClientRect();
         categoryBoxes.forEach(box => {
@@ -4392,8 +4565,18 @@
       updateWorkspaceLayout();
     }
 
-    function handleAnswerClick() {
+    async function handleAnswerClick() {
       clearInputError();
+
+      if (currentMode === "free") {
+        const exchanged = await normalizeFreeBlocksWithAnimation();
+        showAnswer();
+        if (exchanged) {
+          const text = experienceTextData[currentLang] || experienceTextData.en;
+          showExchangeCoach(text.freeExchangeDone, { equation: `= ${total}`, step: 1 });
+        }
+        return;
+      }
 
       if (isOperationMode() && additionFreeBuilt) {
         syncAdditionNumbersFromBlocks();
