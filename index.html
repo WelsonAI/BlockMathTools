@@ -1523,6 +1523,8 @@
         <input class="number-input" id="freeNumberInput" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0" />
         <button class="input-icon-btn" id="clearFreeInputBtn" type="button" aria-label="Clear input" title="Clear input">↺</button>
         <button class="build-btn" id="buildFreeBtn" type="button">Show Blocks</button>
+        <button class="build-btn" id="freeChallengeBtn" type="button">Custom Question</button>
+        <button class="build-btn" id="checkFreeChallengeBtn" type="button" disabled>Check</button>
         <button class="workspace-reset" id="resetBtn" type="button">Reset</button>
       </div>
 
@@ -1720,6 +1722,8 @@
     const addNumberBInput = document.getElementById("addNumberBInput");
     const clearAddInputsBtn = document.getElementById("clearAddInputsBtn");
     const buildFreeBtn = document.getElementById("buildFreeBtn");
+    const freeChallengeBtn = document.getElementById("freeChallengeBtn");
+    const checkFreeChallengeBtn = document.getElementById("checkFreeChallengeBtn");
     const buildAddBtn = document.getElementById("buildAddBtn");
     const regroupBtn = document.getElementById("regroupBtn");
     const practiceAddBtn = document.getElementById("practiceAddBtn");
@@ -1771,6 +1775,9 @@
     let coachTimer = null;
     let malayAudioPreloaded = false;
     let freeExchangeRunning = false;
+    let freeChallengeActive = false;
+    let freeChallengeSolved = false;
+    let freeChallengeTarget = 0;
 
     const languageData = {
       en: { words: numberToEnglish, speechLang: "en-US" },
@@ -1785,9 +1792,9 @@
     };
 
     const inputTextData = {
-      en: { mode: "Mode", free: "Free", addition: "Addition (+)", subtraction: "Subtraction (−)", number: "Number", number1: "Number 1", number2: "Number 2", blocks: "Show Blocks", regroup: "Step", practice: "Practice", check: "Check", clear: "Clear Blocks", question: "Question", clearInput: "Clear input" },
-      zh: { mode: "模式", free: "自由", addition: "加法（+）", subtraction: "减法（−）", number: "数字", number1: "第一个数", number2: "第二个数", blocks: "显示方块", regroup: "步骤", practice: "练习", check: "检查", clear: "清空方块", question: "题目", clearInput: "清空输入" },
-      bm: { mode: "Mod", free: "Bebas", addition: "Tambah (+)", subtraction: "Tolak (−)", number: "Nombor", number1: "Nombor 1", number2: "Nombor 2", blocks: "Papar Blok", regroup: "Langkah", practice: "Latih", check: "Semak", clear: "Kosongkan Blok", question: "Soalan", clearInput: "Kosongkan input" }
+      en: { mode: "Mode", free: "Free", addition: "Addition (+)", subtraction: "Subtraction (−)", number: "Number", number1: "Number 1", number2: "Number 2", blocks: "Show Blocks", challenge: "Custom Question", regroup: "Step", practice: "Practice", check: "Check", clear: "Clear Blocks", question: "Question", clearInput: "Clear input" },
+      zh: { mode: "模式", free: "自由", addition: "加法（+）", subtraction: "减法（−）", number: "数字", number1: "第一个数", number2: "第二个数", blocks: "显示方块", challenge: "自由出题", regroup: "步骤", practice: "练习", check: "检查", clear: "清空方块", question: "题目", clearInput: "清空输入" },
+      bm: { mode: "Mod", free: "Bebas", addition: "Tambah (+)", subtraction: "Tolak (−)", number: "Nombor", number1: "Nombor 1", number2: "Nombor 2", blocks: "Papar Blok", challenge: "Soalan Sendiri", regroup: "Langkah", practice: "Latih", check: "Semak", clear: "Kosongkan Blok", question: "Soalan", clearInput: "Kosongkan input" }
     };
 
     const experienceTextData = {
@@ -1808,7 +1815,12 @@
         tapHint: "Match each block to its place, or tap a block to add it.",
         freeWrongPlace: place => `This block belongs in the ${place} place.`,
         freeExchange: (count, from, result, to) => `${count} ${from} blocks have the same value as ${result} ${to} block${result === 1 ? "" : "s"}. Watch the exchange!`,
-        freeExchangeDone: "The blocks changed, but the total value stayed the same."
+        freeExchangeDone: "The blocks changed, but the total value stayed the same.",
+        freeChallengeQuestion: number => `Build ${number} with the blocks.`,
+        freeChallengeHint: number => `Build ${number}: tap or drag the correct blocks into each place.`,
+        freeChallengeCorrect: number => `Excellent! Your blocks show ${number}.`,
+        freeChallengeNeed: (count, place) => `Add ${count} more ${place} block${count === 1 ? "" : "s"}.`,
+        freeChallengeExtra: (count, place) => `Remove ${count} extra ${place} block${count === 1 ? "" : "s"}.`
       },
       zh: {
         soundOn: "🔊 声音开", soundOff: "🔇 声音关", difficulty: "难度",
@@ -1827,7 +1839,12 @@
         tapHint: "把方块放进相同位值的格子，或点一下自动加入。",
         freeWrongPlace: place => `这个方块应该放在${place}。`,
         freeExchange: (count, from, result, to) => `${count} 个${from}和 ${result} 个${to}的值一样。看看它们怎样交换！`,
-        freeExchangeDone: "方块的样子改变了，但是总数没有改变。"
+        freeExchangeDone: "方块的样子改变了，但是总数没有改变。",
+        freeChallengeQuestion: number => `请用方块摆出 ${number}。`,
+        freeChallengeHint: number => `请摆出 ${number}：点击或拖动正确的方块到每个位值。`,
+        freeChallengeCorrect: number => `太棒了！你摆出的方块就是 ${number}。`,
+        freeChallengeNeed: (count, place) => `${place}还需要 ${count} 个方块。`,
+        freeChallengeExtra: (count, place) => `${place}多了 ${count} 个方块。`
       },
       bm: {
         soundOn: "🔊 Bunyi Hidup", soundOff: "🔇 Bunyi Tutup", difficulty: "Tahap",
@@ -1846,7 +1863,12 @@
         tapHint: "Padankan blok dengan nilai tempatnya atau ketik untuk menambah.",
         freeWrongPlace: place => `Blok ini perlu diletakkan di tempat ${place}.`,
         freeExchange: (count, from, result, to) => `${count} blok ${from} sama nilainya dengan ${result} blok ${to}. Lihat pertukarannya!`,
-        freeExchangeDone: "Bentuk blok berubah, tetapi jumlah nilainya tetap sama."
+        freeExchangeDone: "Bentuk blok berubah, tetapi jumlah nilainya tetap sama.",
+        freeChallengeQuestion: number => `Bina ${number} dengan blok.`,
+        freeChallengeHint: number => `Bina ${number}: ketik atau seret blok yang betul ke setiap nilai tempat.`,
+        freeChallengeCorrect: number => `Bagus! Blok kamu menunjukkan ${number}.`,
+        freeChallengeNeed: (count, place) => `Tambah ${count} lagi blok ${place}.`,
+        freeChallengeExtra: (count, place) => `Keluarkan ${count} blok ${place} yang berlebihan.`
       }
     };
 
@@ -2001,6 +2023,8 @@
     languageSelect.addEventListener("change", () => setLanguage(languageSelect.value));
     modeSelect.addEventListener("change", () => setMode(modeSelect.value));
     buildFreeBtn.addEventListener("click", buildBlocksFromFreeInput);
+    freeChallengeBtn.addEventListener("click", startFreeChallenge);
+    checkFreeChallengeBtn.addEventListener("click", checkFreeChallenge);
     clearFreeInputBtn.addEventListener("click", () => clearSpecificInput("free"));
     buildAddBtn.addEventListener("click", buildBlocksFromAdditionInput);
     regroupBtn.addEventListener("click", advanceOperationStep);
@@ -2037,6 +2061,13 @@
         hideExchangeCoach();
         updateAdditionButtonStates();
       });
+    });
+
+    freeNumberInput.addEventListener("input", () => {
+      if (freeChallengeActive) stopFreeChallenge({ keepBlocks: true });
+      clearInputError();
+      updateQuestionLine();
+      updateAdditionButtonStates();
     });
 
     function setLanguage(lang) {
@@ -2078,6 +2109,8 @@
       addFirstLabel.textContent = text.number1;
       addSecondLabel.textContent = text.number2;
       buildFreeBtn.textContent = text.blocks;
+      freeChallengeBtn.textContent = text.challenge;
+      checkFreeChallengeBtn.textContent = text.check;
       buildAddBtn.textContent = text.blocks;
       regroupBtn.textContent = text.regroup;
       updateRegroupButtonLabel();
@@ -2101,7 +2134,7 @@
       difficultySelect.options[2].textContent = text.advanced;
       difficultySelect.options[3].textContent = text.custom;
       randomQuestionBtn.textContent = text.random;
-      hint.textContent = text.tapHint;
+      hint.textContent = freeChallengeActive ? text.freeChallengeHint(freeChallengeTarget) : text.tapHint;
       if (!exchangeCoach.classList.contains("hidden") && currentActivePlace) {
         coachBadge.textContent = `${text.step} ${Math.max(1, additionStepIndex)}`;
       }
@@ -2629,10 +2662,100 @@
     }
 
     function updateQuestionLine() {
-      const hasQuestion = isOperationMode() && (additionBuilt || additionPracticeBuilt);
       const text = inputTextData[currentLang];
+      if (currentMode === "free" && freeChallengeActive) {
+        const experienceText = experienceTextData[currentLang] || experienceTextData.en;
+        questionLine.textContent = `${text.question}: ${experienceText.freeChallengeQuestion(freeChallengeTarget)}`;
+        questionLine.classList.remove("hidden");
+        return;
+      }
+      const hasQuestion = isOperationMode() && (additionBuilt || additionPracticeBuilt);
       questionLine.textContent = `${text.question}: ${additionNumbers.a} ${getOperationSymbol()} ${additionNumbers.b}`;
       questionLine.classList.toggle("hidden", !hasQuestion);
+    }
+
+    function stopFreeChallenge(options = {}) {
+      const { keepBlocks = true } = options;
+      freeChallengeActive = false;
+      freeChallengeSolved = false;
+      freeChallengeTarget = 0;
+      freeChallengeBtn.classList.remove("selected");
+      checkFreeChallengeBtn.disabled = true;
+      document.querySelectorAll(".practice-error").forEach(element => element.classList.remove("practice-error"));
+      if (!keepBlocks) clearBlocks();
+      updateExperienceLabels();
+      updateQuestionLine();
+    }
+
+    function startFreeChallenge() {
+      const target = validateInputNumber(freeNumberInput);
+      if (target === null) return;
+      stopAllAudio();
+      closeFormulaModal();
+      clearBlocks();
+      hideAnswer();
+      clearInputError();
+      clearActivePlace();
+      hideExchangeCoach();
+      freeChallengeActive = true;
+      freeChallengeSolved = false;
+      freeChallengeTarget = target;
+      freeChallengeBtn.classList.add("selected");
+      checkFreeChallengeBtn.disabled = false;
+      updateExperienceLabels();
+      updateQuestionLine();
+      updateAdditionButtonStates();
+      updateDisplay();
+      updateWorkspaceLayout();
+    }
+
+    function getFreeChallengeFeedback() {
+      const expected = getExpectedCounts(freeChallengeTarget);
+      const actual = { thousand: 0, hundred: 0, ten: 0, one: 0 };
+      placedBlocks.forEach(block => {
+        if (!block.dataset.group && block.dataset.type in actual) actual[block.dataset.type] += 1;
+      });
+      for (const place of ["thousand", "hundred", "ten", "one"]) {
+        const difference = actual[place] - expected[place];
+        if (difference !== 0) return { correct: false, place, count: Math.abs(difference), reason: difference < 0 ? "need" : "extra" };
+      }
+      return { correct: true };
+    }
+
+    function checkFreeChallenge() {
+      if (!freeChallengeActive || freeExchangeRunning) return;
+      const feedback = getFreeChallengeFeedback();
+      const text = experienceTextData[currentLang] || experienceTextData.en;
+      document.querySelectorAll(".practice-error").forEach(element => element.classList.remove("practice-error"));
+
+      if (feedback.correct) {
+        freeChallengeSolved = true;
+        const message = text.freeChallengeCorrect(freeChallengeTarget);
+        showInputMessage(message, true);
+        workspace.classList.remove("feedback-wrong");
+        workspace.classList.add("feedback-correct");
+        setTimeout(() => workspace.classList.remove("feedback-correct"), 700);
+        playFeedbackSound(true);
+        showExchangeCoach(message, { equation: `✓ ${freeChallengeTarget}`, step: 1 });
+        showAnswer();
+        updateAdditionButtonStates();
+        return;
+      }
+
+      freeChallengeSolved = false;
+      const placeLabel = getPlaceLabelByType(feedback.place);
+      const message = feedback.reason === "need"
+        ? text.freeChallengeNeed(feedback.count, placeLabel)
+        : text.freeChallengeExtra(feedback.count, placeLabel);
+      showInputMessage(message, false);
+      const box = document.querySelector(`.category-box[data-category="${feedback.place}"]`);
+      box?.classList.add("practice-error");
+      workspace.classList.remove("feedback-correct");
+      workspace.classList.add("feedback-wrong");
+      setTimeout(() => workspace.classList.remove("feedback-wrong"), 500);
+      playFeedbackSound(false);
+      showExchangeCoach(message, { equation: "?", step: 1 });
+      updateAdditionButtonStates();
     }
 
     function hasStudentBlocksInWorkspace() {
@@ -2709,8 +2832,11 @@
       formulaBtn.disabled = !formulaReady;
       checkPracticeBtn.disabled = !isPractice;
       clearPracticeBtn.disabled = !canClearStudentBlocks;
+      const hasFreeQuestion = currentMode === "free" && freeNumberInput.value.trim() !== "";
+      freeChallengeBtn.disabled = !hasFreeQuestion || freeExchangeRunning;
+      checkFreeChallengeBtn.disabled = !freeChallengeActive || freeExchangeRunning || freeChallengeSolved;
       resetBtn.style.display = isAdditionMode ? "none" : "inline-flex";
-      answerBtn.disabled = shouldDisableAnswerForSubtractionStep();
+      answerBtn.disabled = (freeChallengeActive && !freeChallengeSolved) || shouldDisableAnswerForSubtractionStep();
       updateRegroupButtonLabel();
     }
 
@@ -3231,6 +3357,7 @@
     }
 
     function clearNumberInputs() {
+      stopFreeChallenge({ keepBlocks: true });
       freeNumberInput.value = "";
       addNumberAInput.value = "";
       addNumberBInput.value = "";
@@ -3270,6 +3397,7 @@
 
     function clearSpecificInput(which) {
       if (which === "free") {
+        stopFreeChallenge({ keepBlocks: true });
         freeNumberInput.value = "";
         if (currentMode === "free") {
           stopAllAudio();
@@ -3447,6 +3575,7 @@
     function buildBlocksFromFreeInput() {
       const number = validateInputNumber(freeNumberInput);
       if (number === null) return;
+      stopFreeChallenge({ keepBlocks: true });
       clearInputError();
       additionBuilt = false;
       additionPracticeBuilt = false;
@@ -3674,6 +3803,7 @@
         return;
       }
 
+      if (freeChallengeActive) freeChallengeSolved = false;
       const block = createBlockElement(type, value);
       total += value;
       hideAnswer();
@@ -3723,6 +3853,7 @@
       setTimeout(() => block.remove(), 210);
       placedBlocks.splice(index, 1);
       total = Math.max(0, total - Number(block.dataset.value || 0));
+      if (freeChallengeActive) freeChallengeSolved = false;
       if (additionFreeBuilt) syncAdditionNumbersFromBlocks();
       hideAnswer();
       updateFormulaView();
@@ -3948,6 +4079,8 @@
       answerBtn.disabled = busy;
       resetBtn.disabled = busy;
       buildFreeBtn.disabled = busy;
+      freeChallengeBtn.disabled = busy;
+      checkFreeChallengeBtn.disabled = busy;
       clearFreeInputBtn.disabled = busy;
       freeNumberInput.disabled = busy;
       modeSelect.disabled = busy;
