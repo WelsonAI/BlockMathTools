@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Base Ten Blocks Tool EN ZH BM</title>
+  <link rel="icon" href="data:," />
 
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -1091,6 +1092,381 @@
         font-size: clamp(24px, 8vw, 32px);
       }
     }
+
+    /* Child-friendly visual system shared with the other maths tools. */
+    :root {
+      --sunny-bg: #ffe8b5;
+      --sunny-deep: #ffca4f;
+      --ink: #38260f;
+      --card: rgba(255, 255, 255, .9);
+      --shadow: 0 10px 28px rgba(91, 58, 13, .14);
+      --thousand: #ff88b4;
+      --hundred: #62b9f5;
+      --ten: #94ce35;
+      --one: #ad76e8;
+    }
+
+    body {
+      color: var(--ink);
+      background-color: var(--sunny-bg);
+      background-image:
+        url("assets/forest-footer.png"),
+        radial-gradient(circle, rgba(255,255,255,.72) 0 5px, transparent 6px),
+        linear-gradient(180deg, #fff5d8 0%, var(--sunny-bg) 60%, #ffdda0 100%);
+      background-position: center bottom, 24px 26px, 0 0;
+      background-size: auto clamp(210px, 31vh, 350px), 190px 190px, 100% 100%;
+      background-repeat: repeat-x, repeat, no-repeat;
+      background-attachment: fixed;
+    }
+
+    body[data-mode="free"] {
+      overflow-y: hidden;
+    }
+
+    .tool {
+      width: min(97vw, 1320px);
+      padding: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    body[data-mode="free"] .tool {
+      height: 100dvh;
+      min-height: 620px;
+      overflow: hidden;
+    }
+
+    .top-panel {
+      min-height: 132px;
+      padding: 10px 18px;
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      transition: min-height .25s ease, padding .25s ease;
+    }
+
+    body:not(.answer-shown) .top-panel {
+      min-height: 66px;
+      padding: 8px 16px;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    body:not(.answer-shown) .display { display: none; }
+    body:not(.answer-shown) .answer-controls { margin-top: 0; }
+
+    .mode-panel,
+    .tray,
+    .workspace,
+    .modal-card {
+      background: var(--card);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .mode-panel {
+      border: 1px solid rgba(255,255,255,.9);
+      padding: 10px 14px;
+    }
+
+    .lang-select,
+    .mode-select,
+    .difficulty-select,
+    .number-input,
+    .answer-btn,
+    .speak-btn,
+    .sound-toggle,
+    .build-btn,
+    .formula-btn,
+    .input-icon-btn,
+    .workspace-reset {
+      border: 2px solid #67471e;
+      color: var(--ink);
+      background-color: #fffdf8;
+      box-shadow: 0 3px 0 rgba(103,71,30,.2);
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .build-btn:hover:not(:disabled),
+    .formula-btn:hover:not(:disabled),
+    .workspace-reset:hover,
+    .sound-toggle:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 0 rgba(103,71,30,.18);
+    }
+
+    .build-btn.selected,
+    #buildFreeBtn,
+    #buildAddBtn,
+    #regroupBtn:not(:disabled) {
+      background: var(--sunny-deep);
+      color: #432b08;
+    }
+
+    .sound-toggle {
+      min-width: 116px;
+      height: 34px;
+      border-radius: 10px;
+      padding: 5px 9px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .sound-toggle[aria-pressed="false"] {
+      background: #eee9df;
+      color: #706654;
+    }
+
+    .practice-tools {
+      flex-basis: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      padding-top: 2px;
+    }
+
+    .place-rule-strip {
+      flex-basis: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .place-rule {
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border: 1px solid rgba(103,71,30,.14);
+      border-radius: 12px;
+      background: rgba(255,253,248,.82);
+      font-size: 12px;
+      color: var(--ink);
+      box-shadow: 0 2px 6px rgba(91,58,13,.07);
+    }
+
+    .place-rule img { width: 25px; height: 25px; object-fit: contain; }
+
+    .difficulty-select {
+      appearance: none;
+      height: 32px;
+      min-width: 168px;
+      border-radius: 10px;
+      padding: 4px 28px 4px 10px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #67471e 50%),
+        linear-gradient(135deg, #67471e 50%, transparent 50%);
+      background-position: calc(100% - 15px) 13px, calc(100% - 9px) 13px;
+      background-size: 6px 6px;
+      background-repeat: no-repeat;
+    }
+
+    .random-btn { min-width: 132px; }
+
+    .main-area {
+      flex: 1 1 auto;
+      min-height: 390px;
+    }
+
+    .tray {
+      border: 1px solid rgba(255,255,255,.9);
+      overflow: visible;
+    }
+
+    .source-card {
+      border: 2px solid rgba(103,71,30,.13);
+      box-shadow: 0 4px 10px rgba(91,58,13,.08);
+      transition: transform .18s cubic-bezier(.2,.8,.2,1.25), box-shadow .18s ease;
+    }
+
+    .source-card:hover,
+    .source-card.tap-active {
+      transform: translateY(-3px) scale(1.025);
+      box-shadow: 0 8px 16px rgba(91,58,13,.15);
+    }
+
+    .workspace {
+      border: 2px solid rgba(103,71,30,.22);
+      min-height: 390px;
+      background: rgba(255, 253, 247, .88);
+    }
+
+    .category-box,
+    .add-box,
+    .add-group {
+      border-style: solid;
+      border-color: rgba(103,71,30,.16);
+      background: rgba(255,255,255,.58);
+      transition: border-color .2s ease, box-shadow .2s ease, background .2s ease, transform .2s ease;
+    }
+
+    [data-category="thousand"] { background-color: rgba(255,136,180,.10); }
+    [data-category="hundred"] { background-color: rgba(98,185,245,.10); }
+    [data-category="ten"] { background-color: rgba(148,206,53,.11); }
+    [data-category="one"] { background-color: rgba(173,118,232,.10); }
+
+    .category-box.active-place,
+    .add-box.active-place,
+    .add-box.drop-target-active {
+      border-color: #f4a900;
+      background: rgba(255,224,119,.30);
+      box-shadow: inset 0 0 0 3px rgba(255,202,79,.42), 0 0 0 4px rgba(255,255,255,.72);
+      transform: scale(1.012);
+    }
+
+    .add-box.practice-error {
+      border-color: #e26060;
+      background: rgba(255,225,225,.68);
+      animation: gentleShake .38s ease;
+    }
+
+    .category-title,
+    .add-box-title,
+    .add-group-label,
+    .add-group-value {
+      color: var(--ink);
+      box-shadow: 0 2px 6px rgba(91,58,13,.08);
+    }
+
+    .workspace-reset {
+      position: static;
+      min-width: 66px;
+      height: 32px;
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .hint {
+      color: rgba(87,61,24,.42);
+      font-size: clamp(18px, 2.4vw, 28px);
+    }
+
+    .block {
+      filter: drop-shadow(0 4px 5px rgba(64,42,10,.18));
+      transition: left .34s cubic-bezier(.22,.9,.25,1.12), top .34s cubic-bezier(.22,.9,.25,1.12), transform .18s ease, opacity .18s ease;
+    }
+
+    .block.dragging { transition: none; transform: scale(1.04); }
+    .block.block-settle { animation: blockSettle .36s cubic-bezier(.2,.9,.2,1.3); }
+    .block.block-enter { animation: blockEnter .42s cubic-bezier(.2,.85,.2,1.25) both; animation-delay: var(--block-delay, 0ms); }
+    .block.block-exit { animation: blockExit .3s ease both; animation-delay: var(--block-delay, 0ms); }
+
+    .exchange-coach {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 70;
+      width: min(92%, 650px);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 13px;
+      border: 2px solid #e3a324;
+      border-radius: 16px;
+      background: rgba(255,252,239,.97);
+      box-shadow: 0 8px 22px rgba(91,58,13,.18);
+      pointer-events: none;
+      animation: coachIn .3s ease both;
+    }
+
+    .exchange-coach.hidden { display: none; }
+    .workspace.show-addition-area:has(.exchange-coach:not(.hidden)) .addition-layer { top: 80px; }
+    .coach-badge {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--sunny-deep);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .coach-text { font-size: 15px; font-weight: 900; line-height: 1.3; text-align: center; }
+    .coach-visual { display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 900; }
+    .coach-visual img { width: 38px; height: 38px; object-fit: contain; animation: exchangePop .5s ease both; }
+
+    .workspace.feedback-correct { animation: correctGlow .65s ease; }
+    .workspace.feedback-wrong { animation: gentleShake .4s ease; }
+
+    .input-error.success:not(.hidden) { animation: correctGlow .65s ease; }
+
+    @keyframes blockSettle {
+      0% { transform: translateY(-9px) scale(1.04); }
+      62% { transform: translateY(3px) scale(.985); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    @keyframes blockEnter {
+      0% { opacity: 0; transform: translateY(-18px) scale(.72); }
+      72% { opacity: 1; transform: translateY(3px) scale(1.04); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes blockExit {
+      to { opacity: 0; transform: translateY(16px) scale(.7); }
+    }
+    @keyframes coachIn {
+      from { opacity: 0; transform: translate(-50%, -10px) scale(.96); }
+      to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    }
+    @keyframes exchangePop {
+      0% { transform: scale(.65) rotate(-8deg); opacity: .2; }
+      70% { transform: scale(1.15) rotate(2deg); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    @keyframes correctGlow {
+      0%,100% { box-shadow: var(--shadow); }
+      45% { box-shadow: 0 0 0 7px rgba(62,185,103,.24), var(--shadow); }
+    }
+    @keyframes gentleShake {
+      0%,100% { transform: translateX(0); }
+      30% { transform: translateX(-5px); }
+      65% { transform: translateX(5px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+
+    @media (max-width: 700px) {
+      body { background-size: auto 235px, 150px 150px, 100% 100%; }
+      body[data-mode="free"] { overflow-y: hidden; }
+      body[data-mode="free"] .tool { min-height: 580px; }
+      .tool { padding: 7px; gap: 7px; }
+      .top-panel { min-height: 120px; padding: 8px; border-radius: 18px; }
+      body:not(.answer-shown) .top-panel { min-height: 52px; padding: 5px 8px; }
+      .lang-switch { margin: 0; }
+      .sound-toggle { min-width: 94px; height: 31px; font-size: 11px; padding: 4px 6px; }
+      .mode-panel { padding: 7px; }
+      .practice-tools { gap: 5px; }
+      .place-rule-strip { gap: 4px; flex-wrap: nowrap; }
+      .place-rule { height: 28px; gap: 3px; padding: 3px 5px; font-size: 10px; }
+      .place-rule img { width: 20px; height: 20px; }
+      .difficulty-select { height: 30px; min-width: 150px; font-size: 12px; }
+      .main-area { min-height: 0; gap: 7px; }
+      .tray { flex-basis: 92px; padding: 6px; gap: 6px; }
+      .source-card { min-width: 72px; height: 78px; font-size: 13px; }
+      .source-img { width: 43px; height: 43px; }
+      .workspace { min-height: 330px; height: auto; }
+      body[data-mode="free"] .workspace { flex: 1 1 auto; min-height: 285px; }
+      .exchange-coach { top: 8px; width: 95%; padding: 7px 8px; gap: 6px; grid-template-columns: auto 1fr; }
+      .workspace.show-addition-area:has(.exchange-coach:not(.hidden)) .addition-layer { top: 108px; }
+      .coach-text { font-size: 12px; }
+      .coach-visual { grid-column: 1 / -1; justify-content: center; font-size: 14px; }
+      .coach-visual img { width: 30px; height: 30px; }
+      .teaching-panel { max-height: 132px; }
+      .teaching-panel.expanded { max-height: 320px; }
+    }
   </style>
 </head>
 
@@ -1101,7 +1477,7 @@
         <select class="lang-select" id="languageSelect" aria-label="Language">
           <option value="en">English</option>
           <option value="zh">中文</option>
-          <option value="bm">Malay</option>
+          <option value="bm">Bahasa Melayu</option>
         </select>
       </div>
 
@@ -1113,6 +1489,7 @@
       <div class="answer-controls" aria-label="Answer controls">
         <button class="answer-btn" id="answerBtn" type="button" aria-label="Answer">Answer</button>
         <button class="speak-btn" id="speakBtn" type="button" aria-label="Speak">🔊</button>
+        <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">🔊 Sound On</button>
       </div>
     </section>
 
@@ -1128,17 +1505,18 @@
 
       <div class="input-row" id="freeInputRow">
         <span class="input-label" id="freeNumberLabel">Number</span>
-        <input class="number-input" id="freeNumberInput" type="number" inputmode="numeric" min="0" max="100000" placeholder="0" />
+        <input class="number-input" id="freeNumberInput" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0" />
         <button class="input-icon-btn" id="clearFreeInputBtn" type="button" aria-label="Clear input" title="Clear input">↺</button>
         <button class="build-btn" id="buildFreeBtn" type="button">Show Blocks</button>
+        <button class="workspace-reset" id="resetBtn" type="button">Reset</button>
       </div>
 
       <div class="input-row hidden" id="additionInputRow">
         <span class="input-label" id="addFirstLabel">Number 1</span>
-        <input class="number-input" id="addNumberAInput" type="number" inputmode="numeric" min="0" max="100000" placeholder="0" />
+        <input class="number-input" id="addNumberAInput" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0" />
         <span class="plus-symbol" id="operationSymbol">+</span>
         <span class="input-label" id="addSecondLabel">Number 2</span>
-        <input class="number-input" id="addNumberBInput" type="number" inputmode="numeric" min="0" max="100000" placeholder="0" />
+        <input class="number-input" id="addNumberBInput" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0" />
         <button class="input-icon-btn" id="clearAddInputsBtn" type="button" aria-label="Clear inputs" title="Clear inputs">↺</button>
         <button class="build-btn" id="buildAddBtn" type="button">Show Blocks</button>
         <button class="build-btn hidden" id="regroupBtn" type="button">Step</button>
@@ -1146,6 +1524,22 @@
         <button class="build-btn" id="checkPracticeBtn" type="button">Check</button>
         <button class="build-btn" id="clearPracticeBtn" type="button">Clear</button>
         <button class="formula-btn" id="formulaBtn" type="button">Formula</button>
+        <div class="practice-tools">
+          <label class="input-label" id="difficultyLabel" for="difficultySelect">Difficulty</label>
+          <select class="difficulty-select" id="difficultySelect">
+            <option value="beginner">Beginner · 0–99</option>
+            <option value="intermediate">Intermediate · 0–999</option>
+            <option value="advanced">Advanced · 0–9999</option>
+            <option value="custom">Custom question</option>
+          </select>
+          <button class="build-btn random-btn" id="randomQuestionBtn" type="button">🎲 New Question</button>
+        </div>
+      </div>
+
+      <div class="place-rule-strip" aria-label="Place value exchange rules">
+        <span class="place-rule"><b>10 ×</b><img src="assets/one.png" alt="1"><b>=</b><img src="assets/ten.png" alt="10"></span>
+        <span class="place-rule"><b>10 ×</b><img src="assets/ten.png" alt="10"><b>=</b><img src="assets/hundred.png" alt="100"></span>
+        <span class="place-rule"><b>10 ×</b><img src="assets/hundred.png" alt="100"><b>=</b><img src="assets/thousand.png" alt="1000"></span>
       </div>
 
       <div class="question-line hidden" id="questionLine">Question: 0 + 0</div>
@@ -1155,28 +1549,33 @@
 
     <section class="main-area">
       <section class="tray">
-        <div class="source-card" data-type="thousand" data-value="1000">
+        <div class="source-card" data-type="thousand" data-value="1000" role="button" tabindex="0" aria-label="Add 1000 block">
           <img class="source-img" src="assets/thousand.png" onerror="this.src='assets/thousand.svg'" alt="1000 block" />
           <span>1000</span>
         </div>
 
-        <div class="source-card" data-type="hundred" data-value="100">
+        <div class="source-card" data-type="hundred" data-value="100" role="button" tabindex="0" aria-label="Add 100 block">
           <img class="source-img" src="assets/hundred.png" onerror="this.src='assets/hundred.svg'" alt="100 block" />
           <span>100</span>
         </div>
 
-        <div class="source-card" data-type="ten" data-value="10">
+        <div class="source-card" data-type="ten" data-value="10" role="button" tabindex="0" aria-label="Add 10 block">
           <img class="source-img" src="assets/ten.png" onerror="this.src='assets/ten.svg'" alt="10 block" />
           <span>10</span>
         </div>
 
-        <div class="source-card" data-type="one" data-value="1">
+        <div class="source-card" data-type="one" data-value="1" role="button" tabindex="0" aria-label="Add 1 block">
           <img class="source-img" src="assets/one.png" onerror="this.src='assets/one.svg'" alt="1 block" />
           <span>1</span>
         </div>
       </section>
 
       <section class="workspace" id="workspace">
+        <div class="exchange-coach hidden" id="exchangeCoach" aria-live="polite">
+          <div class="coach-badge" id="coachBadge">Step</div>
+          <div class="coach-text" id="coachText"></div>
+          <div class="coach-visual" id="coachVisual"></div>
+        </div>
         <div class="category-layer hidden" id="categoryLayer" aria-hidden="true">
           <div class="category-box" data-category="thousand"><div class="category-title">thousand</div></div>
           <div class="category-box" data-category="hundred"><div class="category-title">hundred</div></div>
@@ -1226,7 +1625,6 @@
         </div>
 
         <div class="hint" id="hint">Drag blocks here</div>
-        <button class="workspace-reset" id="resetBtn" type="button">Reset</button>
       </section>
     </section>
   </main>
@@ -1319,6 +1717,14 @@
     const addFirstLabel = document.getElementById("addFirstLabel");
     const addSecondLabel = document.getElementById("addSecondLabel");
     const operationSymbol = document.getElementById("operationSymbol");
+    const soundToggle = document.getElementById("soundToggle");
+    const difficultyLabel = document.getElementById("difficultyLabel");
+    const difficultySelect = document.getElementById("difficultySelect");
+    const randomQuestionBtn = document.getElementById("randomQuestionBtn");
+    const exchangeCoach = document.getElementById("exchangeCoach");
+    const coachBadge = document.getElementById("coachBadge");
+    const coachText = document.getElementById("coachText");
+    const coachVisual = document.getElementById("coachVisual");
 
     let total = 0;
     let currentDrag = null;
@@ -1329,9 +1735,9 @@
     let bmAudioToken = 0;
     const placedBlocks = [];
 
-    const MAX_INPUT_NUMBER = 100000;
-    const MAX_FREE_TOTAL = 100000;
-    const MAX_ADDITION_TOTAL = 200000;
+    const MAX_INPUT_NUMBER = 9999;
+    const MAX_FREE_TOTAL = 9999;
+    const MAX_ADDITION_TOTAL = 9999;
 
     let currentErrorKey = "";
     let additionBuilt = false;
@@ -1343,6 +1749,12 @@
     let lastBorrowStepDetail = null;
     let teachingExpanded = false;
     let additionNumbers = { a: 0, b: 0 };
+    let soundEnabled = true;
+    let effectsAudioContext = null;
+    let additionStepIndex = 0;
+    let currentActivePlace = "";
+    let coachTimer = null;
+    let malayAudioPreloaded = false;
 
     const languageData = {
       en: { words: numberToEnglish, speechLang: "en-US" },
@@ -1362,29 +1774,83 @@
       bm: { mode: "Mod", free: "Bebas", addition: "Tambah (+)", subtraction: "Tolak (−)", number: "Nombor", number1: "Nombor 1", number2: "Nombor 2", blocks: "Papar Blok", regroup: "Langkah", practice: "Latih", check: "Semak", clear: "Kosongkan Blok", question: "Soalan", clearInput: "Kosongkan input" }
     };
 
+    const experienceTextData = {
+      en: {
+        soundOn: "🔊 Sound On", soundOff: "🔇 Sound Off", difficulty: "Difficulty",
+        beginner: "Beginner · 0–99", intermediate: "Intermediate · 0–999", advanced: "Advanced · 0–9999", custom: "Custom question",
+        random: "🎲 New Question", step: "Step", startAddition: "Start with the ones. Add the blocks in the two highlighted boxes.",
+        addStep: (place, a, b, carry, total) => `${place}: ${a} + ${b}${carry ? ` + ${carry}` : ""} = ${total}.`,
+        exchange: (from, to, write) => `Keep ${write} ${from}. Exchange 10 ${from} for 1 ${to}.`,
+        noExchange: answer => `No exchange is needed. Write ${answer}.`,
+        additionDone: "All place values are complete. Press Answer to see the total.",
+        borrow: (from, to) => `Take 1 ${from} and open it into 10 ${to}.`,
+        borrowingDone: "The borrowing is complete. Press Answer to see what is left.",
+        needMore: (group, count, place) => `${group}: add ${count} more ${place} block${count === 1 ? "" : "s"}.`,
+        tooMany: (group, count, place) => `${group}: remove ${count} extra ${place} block${count === 1 ? "" : "s"}.`,
+        wrongPlace: "Match each block to the place with the same value.",
+        correct: "Great work! Every block is in the correct place.",
+        tapHint: "Drag a block here, or tap a block to add it."
+      },
+      zh: {
+        soundOn: "🔊 声音开", soundOff: "🔇 声音关", difficulty: "难度",
+        beginner: "初级 · 0–99", intermediate: "中级 · 0–999", advanced: "高级 · 0–9999", custom: "自由出题",
+        random: "🎲 随机出题", step: "步骤", startAddition: "从个位开始，把两个高亮框里的方块加起来。",
+        addStep: (place, a, b, carry, total) => `${place}：${a} + ${b}${carry ? ` + ${carry}` : ""} = ${total}。`,
+        exchange: (from, to, write) => `留下 ${write} 个${from}，把 10 个${from}换成 1 个${to}。`,
+        noExchange: answer => `不需要进位，写下 ${answer}。`,
+        additionDone: "所有位值都完成了。按“答案”查看总数。",
+        borrow: (from, to) => `拿出 1 个${from}，拆成 10 个${to}。`,
+        borrowingDone: "借位完成了。按“答案”看看还剩多少。",
+        needMore: (group, count, place) => `${group}的${place}还需要 ${count} 个方块。`,
+        tooMany: (group, count, place) => `${group}的${place}多了 ${count} 个方块。`,
+        wrongPlace: "请把方块放进相同位值的格子。",
+        correct: "做得好！所有方块都放对了。",
+        tapHint: "把方块拖进来，或点一下方块加入。"
+      },
+      bm: {
+        soundOn: "🔊 Bunyi Hidup", soundOff: "🔇 Bunyi Tutup", difficulty: "Tahap",
+        beginner: "Asas · 0–99", intermediate: "Sederhana · 0–999", advanced: "Lanjutan · 0–9999", custom: "Soalan sendiri",
+        random: "🎲 Soalan Baharu", step: "Langkah", startAddition: "Mula dengan sa. Tambah blok dalam dua petak yang diserlahkan.",
+        addStep: (place, a, b, carry, total) => `${place}: ${a} + ${b}${carry ? ` + ${carry}` : ""} = ${total}.`,
+        exchange: (from, to, write) => `Simpan ${write} ${from}. Tukar 10 ${from} menjadi 1 ${to}.`,
+        noExchange: answer => `Tidak perlu kumpul semula. Tulis ${answer}.`,
+        additionDone: "Semua nilai tempat sudah siap. Tekan Jawapan untuk melihat jumlah.",
+        borrow: (from, to) => `Ambil 1 ${from} dan pecahkan menjadi 10 ${to}.`,
+        borrowingDone: "Proses pinjam selesai. Tekan Jawapan untuk melihat baki.",
+        needMore: (group, count, place) => `${group}: tambah ${count} lagi blok ${place}.`,
+        tooMany: (group, count, place) => `${group}: keluarkan ${count} blok ${place} yang berlebihan.`,
+        wrongPlace: "Padankan setiap blok dengan nilai tempat yang sama.",
+        correct: "Syabas! Semua blok berada di tempat yang betul.",
+        tapHint: "Seret blok ke sini atau ketik blok untuk menambahnya."
+      }
+    };
+
     const errorTextData = {
       en: {
-        range: "This tool only supports numbers from 0 to 100000.",
-        freeTotal: "The total is more than 100000. Please use smaller numbers.",
-        total: "The answer is more than 200000. Please use smaller numbers.",
+        range: "Use a whole number from 0 to 9999.",
+        whole: "Please enter a whole number without decimals.",
+        freeTotal: "The total is more than 9999. Please use smaller numbers.",
+        total: "The answer is more than 9999. Please use smaller numbers.",
         subtractOrder: "Number 1 must be greater than or equal to Number 2.",
         regroup: "Please press Step until the regrouping is complete before showing the answer.",
         correct: "Correct!",
         tryAgain: "Wrong answer, please try again."
       },
       zh: {
-        range: "这个工具只支持 0 到 100000 的数字。",
-        freeTotal: "总数超过 100000，请输入小一点的数字。",
-        total: "答案超过 200000，请输入小一点的数字。",
+        range: "请输入 0 到 9999 的整数。",
+        whole: "请输入整数，不要使用小数。",
+        freeTotal: "总数超过 9999，请输入小一点的数字。",
+        total: "答案超过 9999，请输入小一点的数字。",
         subtractOrder: "第一个数必须大过或等于第二个数。",
         regroup: "请先按步骤，完成换位后再显示答案。",
         correct: "正确！",
         tryAgain: "答案错误，请重新尝试。"
       },
       bm: {
-        range: "Alat ini hanya menyokong nombor dari 0 hingga 100000.",
-        freeTotal: "Jumlah melebihi 100000. Sila gunakan nombor yang lebih kecil.",
-        total: "Jawapan melebihi 200000. Sila gunakan nombor yang lebih kecil.",
+        range: "Gunakan nombor bulat dari 0 hingga 9999.",
+        whole: "Sila masukkan nombor bulat tanpa perpuluhan.",
+        freeTotal: "Jumlah melebihi 9999. Sila gunakan nombor yang lebih kecil.",
+        total: "Jawapan melebihi 9999. Sila gunakan nombor yang lebih kecil.",
         subtractOrder: "Nombor 1 mesti lebih besar atau sama dengan Nombor 2.",
         regroup: "Sila tekan Langkah sehingga kumpul semula selesai sebelum memaparkan jawapan.",
         correct: "Betul!",
@@ -1512,7 +1978,7 @@
     buildFreeBtn.addEventListener("click", buildBlocksFromFreeInput);
     clearFreeInputBtn.addEventListener("click", () => clearSpecificInput("free"));
     buildAddBtn.addEventListener("click", buildBlocksFromAdditionInput);
-    regroupBtn.addEventListener("click", regroupSubtraction);
+    regroupBtn.addEventListener("click", advanceOperationStep);
     clearAddInputsBtn.addEventListener("click", () => clearSpecificInput("ab"));
     practiceAddBtn.addEventListener("click", buildPracticeFromAdditionInput);
     checkPracticeBtn.addEventListener("click", checkPracticeAnswer);
@@ -1520,6 +1986,9 @@
     formulaBtn.addEventListener("click", openFormulaModal);
     formulaCloseBtn.addEventListener("click", closeFormulaModal);
     formulaModal.addEventListener("click", e => { if (e.target === formulaModal) closeFormulaModal(); });
+    document.addEventListener("keydown", event => { if (event.key === "Escape") closeFormulaModal(); });
+    soundToggle.addEventListener("click", toggleSound);
+    randomQuestionBtn.addEventListener("click", generateRandomPracticeQuestion);
     teachingPanel.addEventListener("click", e => {
       if (!e.target.closest("[data-guide-toggle]")) return;
       teachingExpanded = !teachingExpanded;
@@ -1537,13 +2006,20 @@
     [addNumberAInput, addNumberBInput].forEach(input => {
       input.addEventListener("input", () => {
         if (!isOperationMode()) return;
+        difficultySelect.value = "custom";
+        additionStepIndex = 0;
+        clearActivePlace();
+        hideExchangeCoach();
         updateAdditionButtonStates();
       });
     });
 
     function setLanguage(lang) {
       stopAllAudio();
+      const languageChanged = currentLang !== lang;
       currentLang = lang;
+      if (lang === "bm") preloadMalayAudio();
+      if (languageChanged) hideExchangeCoach();
 
       languageSelect.value = lang;
 
@@ -1556,6 +2032,7 @@
       formulaCloseBtn.textContent = buttonText.close === "Close" ? "✕" : "✕";
 
       updateInputLabels();
+      updateExperienceLabels();
       updateCategoryLabels();
       updateAdditionLabels();
       updateFormulaView();
@@ -1589,10 +2066,245 @@
       updateQuestionLine();
     }
 
+    function updateExperienceLabels() {
+      const text = experienceTextData[currentLang] || experienceTextData.en;
+      soundToggle.textContent = soundEnabled ? text.soundOn : text.soundOff;
+      soundToggle.setAttribute("aria-pressed", String(soundEnabled));
+      difficultyLabel.textContent = text.difficulty;
+      difficultySelect.options[0].textContent = text.beginner;
+      difficultySelect.options[1].textContent = text.intermediate;
+      difficultySelect.options[2].textContent = text.advanced;
+      difficultySelect.options[3].textContent = text.custom;
+      randomQuestionBtn.textContent = text.random;
+      hint.textContent = text.tapHint;
+      if (!exchangeCoach.classList.contains("hidden") && currentActivePlace) {
+        coachBadge.textContent = `${text.step} ${Math.max(1, additionStepIndex)}`;
+      }
+    }
+
     function updateCategoryLabels() {
       const labels = categoryTextData[currentLang];
       categoryBoxes.forEach(box => box.querySelector(".category-title").textContent = labels[box.dataset.category]);
       additionBoxes.forEach(box => box.querySelector(".add-box-title").textContent = labels[box.dataset.category]);
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      updateExperienceLabels();
+      if (soundEnabled) playBlockSound(.9);
+    }
+
+    function getEffectsAudioContext() {
+      if (!soundEnabled) return null;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      if (!effectsAudioContext) effectsAudioContext = new AudioContextClass();
+      if (effectsAudioContext.state === "suspended") effectsAudioContext.resume().catch(() => {});
+      return effectsAudioContext;
+    }
+
+    function playBlockSound(strength = 1) {
+      const context = getEffectsAudioContext();
+      if (!context) return;
+      const now = context.currentTime;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "triangle";
+      oscillator.frequency.setValueAtTime(420 * strength, now);
+      oscillator.frequency.exponentialRampToValueAtTime(150, now + .055);
+      gain.gain.setValueAtTime(.0001, now);
+      gain.gain.exponentialRampToValueAtTime(.12, now + .004);
+      gain.gain.exponentialRampToValueAtTime(.0001, now + .075);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start(now);
+      oscillator.stop(now + .08);
+    }
+
+    function playExchangeSound() {
+      const context = getEffectsAudioContext();
+      if (!context) return;
+      [0, .055, .11].forEach((offset, index) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = index === 2 ? "sine" : "triangle";
+        oscillator.frequency.setValueAtTime(index === 2 ? 620 : 260 + index * 80, context.currentTime + offset);
+        gain.gain.setValueAtTime(.0001, context.currentTime + offset);
+        gain.gain.exponentialRampToValueAtTime(.10, context.currentTime + offset + .006);
+        gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + offset + .11);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(context.currentTime + offset);
+        oscillator.stop(context.currentTime + offset + .12);
+      });
+    }
+
+    function playFeedbackSound(correct) {
+      const context = getEffectsAudioContext();
+      if (!context) return;
+      const notes = correct ? [523.25, 659.25, 783.99] : [330, 247];
+      notes.forEach((frequency, index) => {
+        const start = context.currentTime + index * (correct ? .09 : .12);
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = correct ? "sine" : "triangle";
+        oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(.0001, start);
+        gain.gain.exponentialRampToValueAtTime(correct ? .09 : .065, start + .012);
+        gain.gain.exponentialRampToValueAtTime(.0001, start + .16);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(start);
+        oscillator.stop(start + .17);
+      });
+    }
+
+    function animateBlockSequence(blocks, reverse = false) {
+      if (!blocks.length) return;
+      const order = reverse ? ["one", "ten", "hundred", "thousand"] : ["thousand", "hundred", "ten", "one"];
+      const ordered = [...blocks].sort((a, b) => order.indexOf(a.dataset.type) - order.indexOf(b.dataset.type));
+      ordered.forEach((block, index) => {
+        block.style.setProperty("--block-delay", `${Math.min(index * 34, 420)}ms`);
+        block.classList.remove("block-enter", "block-exit", "block-settle");
+        void block.offsetWidth;
+        block.classList.add(reverse ? "block-exit" : "block-enter");
+        block.addEventListener("animationend", () => block.classList.remove(reverse ? "block-exit" : "block-enter"), { once: true });
+      });
+      const uniquePlaces = [...new Set(ordered.map(block => block.dataset.type))];
+      uniquePlaces.forEach((place, index) => setTimeout(() => {
+        if (soundEnabled) playBlockSound(1 - index * .08);
+        pulsePlace(place);
+      }, 80 + index * 105));
+    }
+
+    function settleBlock(block) {
+      block.classList.remove("block-settle");
+      void block.offsetWidth;
+      block.classList.add("block-settle");
+      block.addEventListener("animationend", () => block.classList.remove("block-settle"), { once: true });
+      playBlockSound();
+    }
+
+    function clearActivePlace() {
+      document.querySelectorAll(".active-place, .drop-target-active, .practice-error").forEach(element => {
+        element.classList.remove("active-place", "drop-target-active", "practice-error");
+      });
+      currentActivePlace = "";
+    }
+
+    function pulsePlace(place, groups = []) {
+      document.querySelectorAll(".active-place").forEach(element => element.classList.remove("active-place"));
+      const selector = groups.length
+        ? groups.map(group => `.add-box[data-group="${group}"][data-category="${place}"]`).join(",")
+        : `.category-box[data-category="${place}"], .add-box[data-category="${place}"]`;
+      document.querySelectorAll(selector).forEach(element => element.classList.add("active-place"));
+      currentActivePlace = place;
+    }
+
+    function highlightDropTarget(clientX, clientY, type) {
+      document.querySelectorAll(".drop-target-active").forEach(element => element.classList.remove("drop-target-active"));
+      if (!isOperationMode()) return;
+      const target = findValidAdditionTargetAt(clientX, clientY, type);
+      if (!target) return;
+      document.querySelector(`.add-box[data-group="${target.group}"][data-category="${target.category}"]`)?.classList.add("drop-target-active");
+    }
+
+    function showExchangeCoach(message, options = {}) {
+      const text = experienceTextData[currentLang] || experienceTextData.en;
+      const { from = "", to = "", equation = "", step = 1, sticky = false, direction = "bundle" } = options;
+      clearTimeout(coachTimer);
+      coachBadge.textContent = `${text.step} ${step}`;
+      coachText.textContent = message;
+      if (from && to) {
+        coachVisual.innerHTML = direction === "split"
+          ? `<span>1 ×</span><img src="assets/${from}.png" alt=""><span>→ 10 ×</span><img src="assets/${to}.png" alt="">`
+          : `<span>10 ×</span><img src="assets/${from}.png" alt=""><span>→ 1 ×</span><img src="assets/${to}.png" alt="">`;
+      } else {
+        coachVisual.textContent = equation;
+      }
+      exchangeCoach.classList.remove("hidden");
+      if (!sticky) coachTimer = setTimeout(hideExchangeCoach, 5200);
+    }
+
+    function hideExchangeCoach() {
+      clearTimeout(coachTimer);
+      exchangeCoach.classList.add("hidden");
+      coachVisual.innerHTML = "";
+    }
+
+    function getAdditionLearningPlaces() {
+      const order = ["one", "ten", "hundred", "thousand"];
+      const digits = Math.min(4, Math.max(1, String(Math.max(additionNumbers.a, additionNumbers.b, getOperationResult())).length));
+      return order.slice(0, digits);
+    }
+
+    function getCarryIntoAdditionStep(stepIndex) {
+      const a = getExpectedCounts(additionNumbers.a);
+      const b = getExpectedCounts(additionNumbers.b);
+      const places = getAdditionLearningPlaces();
+      let carry = 0;
+      for (let i = 0; i < stepIndex; i++) {
+        carry = Math.floor(((a[places[i]] || 0) + (b[places[i]] || 0) + carry) / 10);
+      }
+      return carry;
+    }
+
+    function advanceOperationStep() {
+      if (currentMode === "addition") advanceAdditionStep();
+      else regroupSubtraction();
+    }
+
+    function advanceAdditionStep() {
+      if (!(currentMode === "addition" && additionBuilt)) return;
+      const places = getAdditionLearningPlaces();
+      if (additionStepIndex >= places.length) return;
+      const place = places[additionStepIndex];
+      const nextPlace = places[additionStepIndex + 1] || "";
+      const countsA = getExpectedCounts(additionNumbers.a);
+      const countsB = getExpectedCounts(additionNumbers.b);
+      const carry = getCarryIntoAdditionStep(additionStepIndex);
+      const sum = (countsA[place] || 0) + (countsB[place] || 0) + carry;
+      const write = sum % 10;
+      const label = getPlaceLabelByType(place);
+      const nextLabel = nextPlace ? getPlaceLabelByType(nextPlace) : "";
+      const text = experienceTextData[currentLang] || experienceTextData.en;
+
+      pulsePlace(place, ["A", "B"]);
+      let message = text.addStep(label, countsA[place] || 0, countsB[place] || 0, carry, sum);
+      if (sum >= 10 && nextPlace) {
+        message += ` ${text.exchange(label, nextLabel, write)}`;
+        showExchangeCoach(message, { from: place, to: nextPlace, step: additionStepIndex + 1, sticky: true });
+        playExchangeSound();
+      } else {
+        message += ` ${text.noExchange(write)}`;
+        showExchangeCoach(message, { equation: `${countsA[place] || 0} + ${countsB[place] || 0}${carry ? ` + ${carry}` : ""} = ${sum}`, step: additionStepIndex + 1, sticky: true });
+        playBlockSound(.9);
+      }
+
+      additionStepIndex += 1;
+      if (additionStepIndex >= places.length) {
+        setTimeout(() => showExchangeCoach(text.additionDone, { equation: `${additionNumbers.a} + ${additionNumbers.b} = ?`, step: places.length, sticky: true }), 900);
+      }
+      updateAdditionButtonStates();
+      updateTeachingPanel();
+    }
+
+    function generateRandomPracticeQuestion() {
+      if (!isOperationMode()) return;
+      const limits = { beginner: 99, intermediate: 999, advanced: 9999, custom: 999 };
+      const max = limits[difficultySelect.value] || 999;
+      let a = Math.floor(Math.random() * (max + 1));
+      let b;
+      if (currentMode === "addition") {
+        b = Math.floor(Math.random() * (max - a + 1));
+      } else {
+        b = Math.floor(Math.random() * (max + 1));
+        if (b > a) [a, b] = [b, a];
+      }
+      if (a === 0 && b === 0) a = Math.min(1, max);
+      addNumberAInput.value = String(a);
+      addNumberBInput.value = String(b);
+      additionStepIndex = 0;
+      clearActivePlace();
+      hideExchangeCoach();
+      buildPracticeFromAdditionInput();
     }
 
     function isOperationMode() {
@@ -1678,13 +2390,16 @@
 
     function createBlocksFromCounts(counts, group) {
       const valueMap = { thousand: 1000, hundred: 100, ten: 10, one: 1 };
+      const created = [];
       ["thousand", "hundred", "ten", "one"].forEach(type => {
         for (let i = 0; i < (counts[type] || 0); i++) {
           const block = createBlockElement(type, valueMap[type], group);
           block.dataset.placeCategory = type;
           total += valueMap[type];
+          created.push(block);
         }
       });
+      return created;
     }
 
     function hasPendingBorrowFromCounts(counts, subtractCounts) {
@@ -1740,8 +2455,10 @@
       closeFormulaModal();
       clearBlocks();
 
-      createBlocksFromCounts(subtractionStepCounts || getExpectedCounts(additionNumbers.a), "A");
-      createBlocksFromCounts(getExpectedCounts(additionNumbers.b), "B");
+      const created = [
+        ...createBlocksFromCounts(subtractionStepCounts || getExpectedCounts(additionNumbers.a), "A"),
+        ...createBlocksFromCounts(getExpectedCounts(additionNumbers.b), "B")
+      ];
 
       additionBuilt = true;
       additionPracticeBuilt = false;
@@ -1753,6 +2470,28 @@
       updateAdditionButtonStates();
       updateDisplay();
       updateWorkspaceLayout();
+      animateBlockSequence(created);
+      if (lastBorrowStepDetail) {
+        const text = experienceTextData[currentLang] || experienceTextData.en;
+        const fromLabel = getPlaceLabelByType(lastBorrowStepDetail.sourcePlace);
+        const toLabel = getPlaceLabelByType(lastBorrowStepDetail.targetPlace);
+        pulsePlace(lastBorrowStepDetail.targetPlace, ["A"]);
+        showExchangeCoach(text.borrow(fromLabel, toLabel), {
+          from: lastBorrowStepDetail.sourcePlace,
+          to: lastBorrowStepDetail.targetPlace,
+          direction: "split",
+          step: subtractionStepIndex,
+          sticky: true
+        });
+        playExchangeSound();
+        if (subtractionRegrouped) {
+          setTimeout(() => showExchangeCoach(text.borrowingDone, {
+            equation: `${additionNumbers.a} − ${additionNumbers.b} = ?`,
+            step: subtractionStepIndex,
+            sticky: true
+          }), 1200);
+        }
+      }
     }
 
     function buildRegroupedSubtractionBlocks() {
@@ -1763,8 +2502,10 @@
       const regroupedA = getRegroupedCountsForSubtraction(additionNumbers.a, additionNumbers.b);
       const normalB = getExpectedCounts(additionNumbers.b);
 
-      createBlocksFromCounts(regroupedA, "A");
-      createBlocksFromCounts(normalB, "B");
+      const created = [
+        ...createBlocksFromCounts(regroupedA, "A"),
+        ...createBlocksFromCounts(normalB, "B")
+      ];
 
       additionBuilt = true;
       additionPracticeBuilt = false;
@@ -1777,6 +2518,7 @@
       updateAdditionButtonStates();
       updateDisplay();
       updateWorkspaceLayout();
+      animateBlockSequence(created);
     }
 
     function regroupSubtraction() {
@@ -1896,16 +2638,17 @@
       // hideAnswer() runs and Formula becomes grey again.
       const formulaReady = hasAdditionWork && answerVisible;
 
-      const canRegroup =
-        currentMode === "subtraction" &&
-        (additionBuilt || additionFreeBuilt) &&
-        hasStudentBlocksInWorkspace() &&
-        needsSubtractionRegroup() &&
-        !subtractionRegrouped;
+      const canRegroup = currentMode === "addition"
+        ? additionBuilt && hasStudentBlocksInWorkspace() && !answerVisible && additionStepIndex < getAdditionLearningPlaces().length
+        : currentMode === "subtraction" &&
+          (additionBuilt || additionFreeBuilt) &&
+          hasStudentBlocksInWorkspace() &&
+          needsSubtractionRegroup() &&
+          !subtractionRegrouped;
 
       buildAddBtn.disabled = isAdditionMode && !hasOperationQuestionInputs();
       practiceAddBtn.disabled = isAdditionMode && !hasOperationQuestionInputs();
-      regroupBtn.classList.toggle("hidden", currentMode !== "subtraction");
+      regroupBtn.classList.toggle("hidden", !isAdditionMode);
       regroupBtn.disabled = !canRegroup;
       formulaBtn.disabled = !formulaReady;
       checkPracticeBtn.disabled = !isPractice;
@@ -2074,6 +2817,12 @@
 
     function updateRegroupButtonLabel() {
       const text = inputTextData[currentLang];
+      if (currentMode === "addition") {
+        const totalSteps = getAdditionLearningPlaces().length;
+        const currentStep = Math.min(additionStepIndex, totalSteps);
+        regroupBtn.textContent = `${text.regroup} ${currentStep}/${totalSteps}`;
+        return;
+      }
       const totalSteps = isOperationMode() && currentMode === "subtraction"
         ? getSubtractionBorrowTeachingSteps(additionNumbers.a, additionNumbers.b).length
         : 0;
@@ -2327,9 +3076,9 @@
 
     function getPlaceValueLabels(length, lang) {
       const labels = {
-        en: ["one", "ten", "hundred", "thousand", "ten thousand", "hundred thousand", "million", "ten million", "hundred million", "billion"],
-        zh: ["个", "十", "百", "千", "万", "十万", "百万", "千万", "亿", "十亿"],
-        bm: ["sa", "puluh", "ratus", "ribu", "puluh ribu", "ratus ribu", "juta", "puluh juta", "ratus juta", "bilion"]
+        en: ["one", "ten", "hundred", "thousand"],
+        zh: ["个", "十", "百", "千"],
+        bm: ["sa", "puluh", "ratus", "ribu"]
       };
       const arr = labels[lang] || labels.en;
       const picked = [];
@@ -2365,7 +3114,13 @@
       const { preserveBlocks = false } = options;
       const modeChanged = currentMode !== mode;
       currentMode = mode;
+      document.body.dataset.mode = mode;
       if (modeChanged) teachingExpanded = false;
+      if (modeChanged) {
+        additionStepIndex = 0;
+        clearActivePlace();
+        hideExchangeCoach();
+      }
 
       if (modeChanged) {
         clearNumberInputs();
@@ -2441,6 +3196,9 @@
       subtractionStepIndex = 0;
       lastBorrowStepDetail = null;
       teachingExpanded = false;
+      additionStepIndex = 0;
+      clearActivePlace();
+      hideExchangeCoach();
       practiceAddBtn.classList.remove("selected");
       additionNumbers = {
         a: getInputNumber(addNumberAInput),
@@ -2462,6 +3220,8 @@
           closeFormulaModal();
           clearBlocks();
           hideAnswer();
+          clearActivePlace();
+          hideExchangeCoach();
           clearInputError();
           additionBuilt = false;
           additionPracticeBuilt = false;
@@ -2490,6 +3250,13 @@
       inputError.classList.remove("hidden");
     }
 
+    function showInputMessage(message, success = false) {
+      currentErrorKey = "";
+      inputError.textContent = message;
+      inputError.classList.toggle("success", success);
+      inputError.classList.remove("hidden");
+    }
+
     function clearInputError() {
       currentErrorKey = "";
       inputError.textContent = "";
@@ -2512,6 +3279,11 @@
     }
 
     function validateInputNumber(input) {
+      const rawValue = Number(input.value);
+      if (!Number.isInteger(rawValue)) {
+        showInputError("whole");
+        return null;
+      }
       const value = getInputNumber(input);
       if (value < 0 || value > MAX_INPUT_NUMBER) {
         showInputError("range");
@@ -2600,10 +3372,11 @@
     function buildBlocksFromNumbers(numbers, groups = []) {
       stopAllAudio();
       clearBlocks();
+      const created = [];
       numbers.forEach((number, index) => {
         const safeNumber = Math.max(0, Math.floor(number));
         getBlockPiecesForNumber(safeNumber).forEach(piece => {
-          createBlockElement(piece.type, piece.value, groups[index] || "");
+          created.push(createBlockElement(piece.type, piece.value, groups[index] || ""));
           total += piece.value;
         });
       });
@@ -2612,6 +3385,7 @@
       updateAdditionButtonStates();
       updateDisplay();
       updateWorkspaceLayout();
+      animateBlockSequence(created);
     }
 
     function buildBlocksFromFreeInput() {
@@ -2626,6 +3400,9 @@
       subtractionStepIndex = 0;
       lastBorrowStepDetail = null;
       teachingExpanded = false;
+      additionStepIndex = 0;
+      clearActivePlace();
+      hideExchangeCoach();
       practiceAddBtn.classList.remove("selected");
       additionNumbers = { a: 0, b: 0 };
       buildBlocksFromNumbers([number], [""]);
@@ -2646,12 +3423,20 @@
       subtractionStepIndex = 0;
       lastBorrowStepDetail = null;
       teachingExpanded = false;
+      additionStepIndex = 0;
+      clearActivePlace();
+      hideExchangeCoach();
       additionBuilt = true;
       additionNumbers = { a: numberA, b: numberB };
       updateAdditionLabels();
       updateFormulaView();
       updateAdditionButtonStates();
       buildBlocksFromNumbers([numberA, numberB], ["A", "B"]);
+      if (currentMode === "addition") {
+        const text = experienceTextData[currentLang] || experienceTextData.en;
+        pulsePlace("one", ["A", "B"]);
+        showExchangeCoach(text.startAddition, { equation: "1 → 10 → 100 → 1000", step: 1, sticky: true });
+      }
     }
 
     function buildPracticeFromAdditionInput() {
@@ -2669,6 +3454,9 @@
       subtractionStepIndex = 0;
       lastBorrowStepDetail = null;
       teachingExpanded = false;
+      additionStepIndex = 0;
+      clearActivePlace();
+      hideExchangeCoach();
       additionPracticeBuilt = true;
       additionNumbers = { a: numberA, b: numberB };
       closeFormulaModal();
@@ -2681,7 +3469,14 @@
       updateWorkspaceLayout();
     }
 
-    sources.forEach(source => source.addEventListener("pointerdown", startFromSource));
+    sources.forEach(source => {
+      source.addEventListener("pointerdown", startFromSource);
+      source.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        addSourceByTap(source.dataset.type, Number(source.dataset.value));
+      });
+    });
 
     function startFromSource(e) {
       e.preventDefault();
@@ -2696,7 +3491,8 @@
       setGhostSize(ghost, type);
       document.body.appendChild(ghost);
 
-      currentDrag = { mode: "new", pointerId: e.pointerId, type, value, ghost };
+      source.classList.add("tap-active");
+      currentDrag = { mode: "new", pointerId: e.pointerId, type, value, ghost, source, startX: e.clientX, startY: e.clientY, moved: false };
       moveGhost(e.clientX, e.clientY);
 
       source.setPointerCapture(e.pointerId);
@@ -2719,7 +3515,9 @@
 
     function onSourcePointerMove(e) {
       if (!currentDrag) return;
+      if (Math.hypot(e.clientX - currentDrag.startX, e.clientY - currentDrag.startY) > 8) currentDrag.moved = true;
       moveGhost(e.clientX, e.clientY);
+      highlightDropTarget(e.clientX, e.clientY, currentDrag.type);
     }
 
     function onSourcePointerUp(e) {
@@ -2728,6 +3526,8 @@
       source.removeEventListener("pointermove", onSourcePointerMove);
       source.removeEventListener("pointerup", onSourcePointerUp);
       source.removeEventListener("pointercancel", onSourcePointerUp);
+      source.classList.remove("tap-active");
+      document.querySelectorAll(".drop-target-active").forEach(element => element.classList.remove("drop-target-active"));
 
       const rect = workspace.getBoundingClientRect();
       const isInside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
@@ -2752,10 +3552,36 @@
         } else {
           addBlock(currentDrag.type, currentDrag.value, e.clientX - rect.left, e.clientY - rect.top);
         }
+      } else if (!currentDrag.moved) {
+        addSourceByTap(currentDrag.type, currentDrag.value);
       }
 
       currentDrag.ghost.remove();
       currentDrag = null;
+    }
+
+    function addSourceByTap(type, value) {
+      if (currentMode === "free") {
+        addBlock(type, value, workspace.clientWidth / 2, workspace.clientHeight / 2);
+        return;
+      }
+      if (additionBuilt) switchOperationBuiltToFreeDrag();
+      const target = getTapTargetForBlock(type);
+      if (target) addPracticeBlock(type, value, target.group, target.category);
+    }
+
+    function getTapTargetForBlock(type) {
+      if (!isOperationMode()) return null;
+      if (additionPracticeBuilt) {
+        const expected = { A: getExpectedCounts(additionNumbers.a), B: getExpectedCounts(additionNumbers.b) };
+        for (const group of ["A", "B"]) {
+          const actual = placedBlocks.filter(block => block.dataset.group === group && block.dataset.placeCategory === type && block.dataset.type === type).length;
+          if (actual < (expected[group][type] || 0)) return { group, category: type };
+        }
+      }
+      const countA = placedBlocks.filter(block => block.dataset.group === "A" && block.dataset.type === type).length;
+      const countB = placedBlocks.filter(block => block.dataset.group === "B" && block.dataset.type === type).length;
+      return { group: countA <= countB ? "A" : "B", category: type };
     }
 
     function switchAdditionToFreeMode() {
@@ -2795,6 +3621,7 @@
         const position = findFreePosition(block, wantedLeft, wantedTop);
         block.style.left = position.left + "px";
         block.style.top = position.top + "px";
+        settleBlock(block);
       });
       total += value;
       hideAnswer();
@@ -2825,7 +3652,26 @@
       hideAnswer();
       updateDisplay();
       updateWorkspaceLayout();
+      requestAnimationFrame(() => {
+        settleBlock(block);
+        pulsePlace(placeCategory, [group]);
+      });
       return block;
+    }
+
+    function removePlacedBlock(block) {
+      const index = placedBlocks.indexOf(block);
+      if (index === -1 || block.dataset.group === "T") return;
+      block.classList.add("block-exit");
+      playBlockSound(.72);
+      setTimeout(() => block.remove(), 210);
+      placedBlocks.splice(index, 1);
+      total = Math.max(0, total - Number(block.dataset.value || 0));
+      if (additionFreeBuilt) syncAdditionNumbersFromBlocks();
+      hideAnswer();
+      updateFormulaView();
+      updateDisplay();
+      updateWorkspaceLayout();
     }
 
     function findAdditionTargetAt(clientX, clientY) {
@@ -2862,6 +3708,7 @@
       const block = e.currentTarget;
       const rect = workspace.getBoundingClientRect();
       const blockRect = block.getBoundingClientRect();
+      block.classList.add("dragging");
       currentDrag = {
         mode: "move",
         block,
@@ -2869,7 +3716,10 @@
         offsetY: e.clientY - blockRect.top,
         workspaceRect: rect,
         lastLeft: parseFloat(block.style.left) || 0,
-        lastTop: parseFloat(block.style.top) || 0
+        lastTop: parseFloat(block.style.top) || 0,
+        startX: e.clientX,
+        startY: e.clientY,
+        moved: false
       };
 
       block.setPointerCapture(e.pointerId);
@@ -2881,6 +3731,8 @@
     function moveExisting(e) {
       if (!currentDrag || currentDrag.mode !== "move") return;
       const { block, offsetX, offsetY, workspaceRect } = currentDrag;
+      if (Math.hypot(e.clientX - currentDrag.startX, e.clientY - currentDrag.startY) > 6) currentDrag.moved = true;
+      highlightDropTarget(e.clientX, e.clientY, block.dataset.type);
       const maxX = workspace.clientWidth - block.offsetWidth;
       const maxY = workspace.clientHeight - block.offsetHeight;
       const nextLeft = clamp(e.clientX - workspaceRect.left - offsetX, 0, maxX);
@@ -2901,6 +3753,14 @@
       block.removeEventListener("pointermove", moveExisting);
       block.removeEventListener("pointerup", stopMoveExisting);
       block.removeEventListener("pointercancel", stopMoveExisting);
+      block.classList.remove("dragging");
+      document.querySelectorAll(".drop-target-active").forEach(element => element.classList.remove("drop-target-active"));
+
+      if (currentDrag && !currentDrag.moved) {
+        removePlacedBlock(block);
+        currentDrag = null;
+        return;
+      }
 
       if (isOperationMode() && (additionPracticeBuilt || additionFreeBuilt)) {
         const target = findValidAdditionTargetAt(e.clientX, e.clientY, block.dataset.type);
@@ -2922,12 +3782,17 @@
         updateWorkspaceLayout();
       }
 
+      settleBlock(block);
+
       currentDrag = null;
     }
 
-    function reset() {
+    async function reset() {
       stopAllAudio();
       closeFormulaModal();
+      const blocksToRemove = [...placedBlocks];
+      animateBlockSequence(blocksToRemove, true);
+      if (blocksToRemove.length) await wait(Math.min(700, 300 + blocksToRemove.length * 20));
       additionBuilt = false;
       additionPracticeBuilt = false;
       additionFreeBuilt = false;
@@ -2936,6 +3801,9 @@
       subtractionStepIndex = 0;
       lastBorrowStepDetail = null;
       teachingExpanded = false;
+      additionStepIndex = 0;
+      clearActivePlace();
+      hideExchangeCoach();
       additionNumbers = { a: 0, b: 0 };
       clearNumberInputs();
       hideAnswer();
@@ -2951,6 +3819,7 @@
       wordDisplay.textContent = languageData[currentLang].words(displayValue);
       display.classList.toggle("hidden", !answerVisible);
       wordDisplay.classList.toggle("hidden", !answerVisible);
+      document.body.classList.toggle("answer-shown", answerVisible);
       speakBtn.disabled = !answerVisible;
       const usingAdditionArea = isOperationMode() && (additionBuilt || additionPracticeBuilt || additionFreeBuilt);
       hint.style.display = (total === 0 && !usingAdditionArea) ? "grid" : "none";
@@ -2969,12 +3838,26 @@
           updateWorkspaceLayout();
           arrangeBlocksForAddition();
           setTimeout(arrangeBlocksForAddition, 120);
+          setTimeout(() => animateBlockSequence(placedBlocks.filter(block => block.dataset.group === "T")), 180);
         }));
+      } else {
+        animatePlaceValueTour();
       }
+    }
+
+    function animatePlaceValueTour() {
+      const places = ["thousand", "hundred", "ten", "one"]
+        .filter(place => placedBlocks.some(block => block.dataset.type === place));
+      places.forEach((place, index) => setTimeout(() => {
+        pulsePlace(place);
+        playBlockSound(1 - index * .08);
+      }, 120 + index * 260));
+      if (places.length) setTimeout(clearActivePlace, 450 + places.length * 260);
     }
 
     function hideAnswer() {
       answerVisible = false;
+      document.body.classList.remove("answer-shown");
       display.classList.add("hidden");
       wordDisplay.classList.add("hidden");
       speakBtn.disabled = true;
@@ -3365,6 +4248,10 @@
     }
 
     function isPracticeAnswerCorrect() {
+      return getPracticeFeedback().correct;
+    }
+
+    function getPracticeFeedback() {
       const expectedByGroup = {
         A: getExpectedCounts(additionNumbers.a),
         B: getExpectedCounts(additionNumbers.b)
@@ -3375,7 +4262,7 @@
         B: { thousand: 0, hundred: 0, ten: 0, one: 0 }
       };
 
-      let hasWrongPlacement = false;
+      let misplacedBlock = null;
 
       placedBlocks.forEach(block => {
         const group = block.dataset.group;
@@ -3383,30 +4270,37 @@
         const type = block.dataset.type;
 
         if (!actualByGroup[group] || !(placeCategory in actualByGroup[group])) {
-          hasWrongPlacement = true;
+          misplacedBlock = block;
           return;
         }
 
         if (type !== placeCategory) {
-          hasWrongPlacement = true;
+          misplacedBlock = block;
         }
 
         actualByGroup[group][placeCategory]++;
       });
 
-      if (hasWrongPlacement) return false;
+      if (misplacedBlock) {
+        return { correct: false, reason: "wrongPlace", group: misplacedBlock.dataset.group || "A", category: misplacedBlock.dataset.type || "one" };
+      }
 
-      return ["A", "B"].every(group => {
-        return ["thousand", "hundred", "ten", "one"].every(category => {
-          return actualByGroup[group][category] === expectedByGroup[group][category];
-        });
-      });
+      for (const group of ["A", "B"]) {
+        for (const category of ["one", "ten", "hundred", "thousand"]) {
+          const difference = actualByGroup[group][category] - expectedByGroup[group][category];
+          if (difference !== 0) return { correct: false, reason: difference < 0 ? "needMore" : "tooMany", group, category, count: Math.abs(difference) };
+        }
+      }
+      return { correct: true };
     }
 
     function clearPracticeBlocksOnly() {
       placedBlocks.splice(0).forEach(block => block.remove());
       total = 0;
       answerVisible = false;
+      additionStepIndex = 0;
+      clearActivePlace();
+      hideExchangeCoach();
       updateDisplay();
       updateWorkspaceLayout();
     }
@@ -3438,8 +4332,17 @@
     function checkPracticeAnswer() {
       if (!(isOperationMode() && additionPracticeBuilt)) return;
 
-      if (isPracticeAnswerCorrect()) {
-        showInputError("correct");
+      document.querySelectorAll(".practice-error").forEach(element => element.classList.remove("practice-error"));
+      const feedback = getPracticeFeedback();
+
+      if (feedback.correct) {
+        const text = experienceTextData[currentLang] || experienceTextData.en;
+        showInputMessage(text.correct, true);
+        workspace.classList.remove("feedback-wrong");
+        workspace.classList.add("feedback-correct");
+        setTimeout(() => workspace.classList.remove("feedback-correct"), 700);
+        playFeedbackSound(true);
+        showExchangeCoach(text.correct, { equation: "✓", step: 1 });
 
         // In subtraction practice, once the student's blocks are correct,
         // unlock Step / Langkah so the same correct blocks can continue into borrowing.
@@ -3462,8 +4365,20 @@
         return;
       }
 
-      clearPracticeBlocksOnly();
-      showInputError("tryAgain");
+      const text = experienceTextData[currentLang] || experienceTextData.en;
+      const groupLabel = feedback.group === "A" ? formulaTextData[currentLang].groupA : formulaTextData[currentLang].groupB;
+      const placeLabel = getPlaceLabelByType(feedback.category);
+      const message = feedback.reason === "wrongPlace"
+        ? text.wrongPlace
+        : text[feedback.reason](groupLabel, feedback.count, placeLabel);
+      showInputMessage(message, false);
+      const wrongBox = document.querySelector(`.add-box[data-group="${feedback.group}"][data-category="${feedback.category}"]`);
+      wrongBox?.classList.add("practice-error");
+      workspace.classList.remove("feedback-correct");
+      workspace.classList.add("feedback-wrong");
+      setTimeout(() => workspace.classList.remove("feedback-wrong"), 500);
+      playFeedbackSound(false);
+      showExchangeCoach(message, { equation: "?", step: 1 });
       practiceAddBtn.classList.add("selected");
       additionBuilt = false;
       additionFreeBuilt = false;
@@ -3520,18 +4435,16 @@
     answerBtn.addEventListener("pointerdown", e => e.stopPropagation());
     formulaBtn.addEventListener("pointerdown", e => e.stopPropagation());
 
-    const bmCommonAudioWords = ["sifar", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "lapan", "sembilan", "sepuluh", "sebelas", "belas", "puluh", "ratus", "ribu", "juta"];
+    const bmCommonAudioWords = ["sifar", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "lapan", "sembilan", "sepuluh", "sebelas", "belas", "puluh", "ratus", "ribu"];
     const bmAudioUrlCache = new Map();
 
     function getBmAudioCandidatePaths(name) {
-      const forms = makeMalayFileNameVariants(name, true);
-      const extensions = [".MP3", ".mp3", ".Mp3"];
-      const paths = [];
-      for (const form of forms) for (const ext of extensions) paths.push(`assets/audio/bm/${form}${ext}`);
-      return paths;
+      return [`assets/audio/bm/${name.trim().toLowerCase()}.MP3`];
     }
 
     function preloadMalayAudio() {
+      if (malayAudioPreloaded) return;
+      malayAudioPreloaded = true;
       bmCommonAudioWords.forEach(word => {
         getBmAudioCandidatePaths(word).forEach(src => {
           const audio = new Audio();
@@ -3542,8 +4455,7 @@
       });
     }
 
-    window.addEventListener("load", () => { setTimeout(preloadMalayAudio, 300); }, { once: true });
-    document.addEventListener("pointerdown", () => { preloadMalayAudio(); }, { once: true });
+    document.addEventListener("pointerdown", () => { if (currentLang === "bm") preloadMalayAudio(); }, { once: true });
     speakBtn.addEventListener("click", speakCurrentAnswer);
 
     function getCurrentSpokenValue() {
@@ -3596,7 +4508,6 @@
       for (const word of rawWords) {
         if (word === "seratus") { chunks.push("satu", "ratus"); continue; }
         if (word === "seribu") { chunks.push("satu", "ribu"); continue; }
-        if (word === "sejuta") { chunks.push("satu", "juta"); continue; }
         chunks.push(word);
       }
       return chunks;
@@ -3620,28 +4531,13 @@
     }
 
     async function playMalayFileMp3(name, token, allowPhraseVariants) {
-      const forms = makeMalayFileNameVariants(name, allowPhraseVariants);
-      const extensions = [".MP3", ".mp3", ".Mp3"];
-      for (const form of forms) {
-        for (const ext of extensions) {
-          const src = `assets/audio/bm/${form}${ext}`;
-          if (bmAudioUrlCache.get(name) === src) {
-            const ok = await playOneMp3(src, token);
-            if (ok) return true;
-          }
-          const ok = await playOneMp3(src, token);
-          if (ok) { bmAudioUrlCache.set(name, src); return true; }
-        }
-      }
-      console.warn("Missing BM audio file:", name);
-      return false;
-    }
-
-    function makeMalayFileNameVariants(name, allowPhraseVariants) {
       const clean = name.trim().toLowerCase().replace(/\s+/g, " ");
-      const variants = [clean];
-      if (allowPhraseVariants && clean.includes(" ")) variants.push(clean.replace(/\s+/g, "_"), clean.replace(/\s+/g, "-"), clean.replace(/\s+/g, ""));
-      return [...new Set(variants)];
+      if (clean.includes(" ") || !bmCommonAudioWords.includes(clean)) return false;
+      const src = bmAudioUrlCache.get(clean) || `assets/audio/bm/${clean}.MP3`;
+      const ok = await playOneMp3(src, token);
+      if (ok) bmAudioUrlCache.set(clean, src);
+      else console.warn("Missing BM audio file:", clean);
+      return ok;
     }
 
     function playOneMp3(src, token) {
@@ -3689,29 +4585,6 @@
     updateAdditionLabels();
     updateFormulaView();
     setLanguage("en");
-      // Practice mode updated: Practice button highlights, Check validates after students finish, wrong answer clears blocks but keeps same question.
-      // Practice drop rule fixed: 1000/100/10/1 can only be dropped into their matching place-value boxes; Check count bug fixed.
-      // Addition UI enhanced: question line added; Formula/Check/Clear buttons enable only when useful; Clear keeps the same Practice question.
-      // Clear button renamed to Clear Blocks / 清空方块 / Kosongkan Blok.
-      // Answer button now clears Practice error messages before showing the answer.
-      // Language buttons replaced with a dropdown: English / Chinese / Malay.
-      // Answer and sound buttons moved below the displayed answer.
-      // Sound button is disabled until the answer is visible; BM reset label changed to Mula Semula.
-      // Addition Answer now shows a third Total/Jumlah row with the answer blocks.
-      // Unified addition display: row values use sign+number pills; formula content is centered with the same sign column idea.
-      // Addition free exploration: selecting + immediately shows Number 1 / Number 2 rows, lets students drag blocks without a question, and Answer shows Total blocks.
-      // Formula stays disabled in all addition modes until Answer is pressed; any new key-in, drag, Practice, or Clear hides the answer and disables Formula again.
-      // Mobile addition layout uses page scrolling and a taller workspace so Number 1 / Number 2 / Total do not get squeezed; Reset is hidden in all addition modes.
-      // Clear Blocks is enabled whenever addition has visible student blocks, including normal Blocks mode.
-      // Manually switching from + back to Free clears all addition blocks automatically.
-      // PC and mobile can scroll with a taller workspace for large addition answers up to 200000; Blocks button renamed to Show Blocks / 显示方块 / Papar Blok.
-      // Mobile total view is taller and uses a larger first row so 100000/200000 thousand blocks do not overflow into the next box.
-      // Subtraction V1 added: no borrowing/regrouping yet. Supports Free / Addition (+) / Subtraction (−) dropdown, Show Blocks, Practice, Answer and Formula.
-      // Operation mode control: without a typed question students can freely drag blocks; Show Blocks / Practice are disabled until both numbers are filled. Dragging after Show Blocks clears the question and stays in operation free-drag mode, not Free.
-      // Subtraction step-by-step: Step / 步骤 / Langkah performs one borrowing move per click before Answer.
-      // Formula explanation is now elementary-friendly for both addition and subtraction, with simple right-to-left steps and borrowing/carrying notes.
-      // Free / Addition selector changed to a dropdown; Chinese language option label changed to 中文.
-      // Visual block input is limited to 0–100000, free mode totals are limited to 100000, and addition totals are limited to 200000 with a clear red error message.
   </script>
 </body>
 </html>
